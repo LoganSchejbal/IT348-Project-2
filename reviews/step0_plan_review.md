@@ -22,9 +22,9 @@ One row per comment above, with the same number. Decision is Accepted or Rejecte
 
 | # | Decision | Reason | Fixed in commit |
 | --- | --- | --- | --- |
-| 1 | Accepted | Type mismatch that must be fixed | Commit |
-| 2 | Accpeted | Must make a decision now | Commit |
-| 3 | Accepted | Clarification needed | Commit |
-| 4 | Accepted | Consider this method | Commit |
-| 5 | Accepted | Do not hard-code. There may be more/less data at some point | Commit | 
-| 6 | Accepted | Must be addressed | Commit |
+| 1 | Accepted | Type mismatch that must be fixed | 34f8b84 |
+| 2 | Accepted | Must make a decision now | 34f8b84 |
+| 3 | Accepted | Clarification needed | 34f8b84 |
+| 4 | Accepted | Consider this method | 34f8b84 |
+| 5 | Accepted | Do not hard-code. There may be more/less data at some point | 34f8b84 |
+| 6 | Accepted | Must be addressed | 34f8b84 |
