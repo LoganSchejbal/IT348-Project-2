@@ -12,3 +12,7 @@ __pycache__/
 .venv/
 venv/
 .ipynb_checkpoints/
+
+# Other 
+Project_2_updated.pdf
+.vscode/settings.json
