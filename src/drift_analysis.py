@@ -106,8 +106,17 @@ def compute_drift_across_years(
         A dataframe with one row per (year_pair, feature), and columns
         `year_a`, `year_b`, `feature`, `statistic`, `p_value`. Consecutive
         pairs are formed from the sorted years present in `year_data`.
+
+    Raises:
+        ValueError: If `year_data` has fewer than 2 years, since there is
+            no consecutive pair to compare. Raised explicitly here instead
+            of letting `pd.concat([])` fail with a generic pandas error.
     """
     years = sorted(year_data.keys())
+    if len(years) < 2:
+        raise ValueError(
+            f"need at least 2 years to compute drift, got {len(years)}"
+        )
     pieces = []
     for year_a, year_b in zip(years[:-1], years[1:]):
         pair_df = compute_drift_between_years(year_data, year_a, year_b, feature_cols)
