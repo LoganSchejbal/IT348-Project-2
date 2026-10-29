@@ -84,6 +84,29 @@ def split_by_year(
     return train_df, test_df
 
 
+def _validate_feature_cols(df: pd.DataFrame, feature_cols: list[str]) -> None:
+    """Check that `feature_cols` is non-empty and present in `df`.
+
+    Shared by `fit_scaler` and `scale_features` so a typo'd or empty
+    `feature_cols` (e.g. from a future change to `get_feature_columns`)
+    fails with an explicit, attributable message instead of a raw
+    pandas `KeyError` or a silently empty `(n, 0)` array.
+
+    Args:
+        df: The dataframe `feature_cols` will be indexed into.
+        feature_cols: Feature column names to validate.
+
+    Raises:
+        ValueError: If `feature_cols` is empty or contains names that
+            are not columns of `df`.
+    """
+    if not feature_cols:
+        raise ValueError("feature_cols must be non-empty")
+    missing = set(feature_cols) - set(df.columns)
+    if missing:
+        raise ValueError(f"feature_cols not found in df columns: {sorted(missing)}")
+
+
 def fit_scaler(train_df: pd.DataFrame, feature_cols: list[str]) -> StandardScaler:
     """Fit a `StandardScaler` on the training dataframe's features only.
 
@@ -95,7 +118,12 @@ def fit_scaler(train_df: pd.DataFrame, feature_cols: list[str]) -> StandardScale
     Returns:
         A `StandardScaler` fit on `train_df[feature_cols]`. Never called
         with test-year data, so no test-year statistics are learned.
+
+    Raises:
+        ValueError: If `feature_cols` is empty or not a subset of
+            `train_df`'s columns (see `_validate_feature_cols`).
     """
+    _validate_feature_cols(train_df, feature_cols)
     scaler = StandardScaler()
     scaler.fit(train_df[feature_cols])
     return scaler
@@ -117,7 +145,12 @@ def scale_features(
     Returns:
         The scaled feature values as a numpy array of shape
         `(len(df), len(feature_cols))`.
+
+    Raises:
+        ValueError: If `feature_cols` is empty or not a subset of `df`'s
+            columns (see `_validate_feature_cols`).
     """
+    _validate_feature_cols(df, feature_cols)
     return scaler.transform(df[feature_cols])
 
 
