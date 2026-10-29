@@ -83,6 +83,7 @@ def evaluate_by_year(
     feature_cols: list[str],
     scaler: StandardScaler,
     years: list[int],
+    train_years: list[int] | None = None,
 ) -> pd.DataFrame:
     """Score every classifier on each requested year individually.
 
@@ -105,12 +106,34 @@ def evaluate_by_year(
             it here; it is never re-fit, so evaluating by year introduces
             no leakage from any of `years` back into the scaler.
         years: The years to evaluate, e.g. the test years.
+        train_years: Optional. The years the models/scaler were fit on.
+            When given, `years` must not overlap with it -- scoring a
+            model on a year it was trained on would silently produce
+            misleadingly optimistic metrics (the leakage this parameter
+            guards against is caller-enforced otherwise). Omit it only
+            when the caller has already guaranteed `years` holds no
+            training years.
 
     Returns:
         A dataframe with one row per `(year, classifier)` combination, with
         columns "year", "classifier", "accuracy", "precision", "recall",
         "f1". Each metric is a float in [0, 1].
+
+    Raises:
+        ValueError: If any year in `years` is missing from `year_data`, or
+            if `train_years` is given and overlaps with `years`.
     """
+    missing = [year for year in years if year not in year_data]
+    if missing:
+        raise ValueError(f"year(s) not found in year_data: {missing}")
+    if train_years is not None:
+        overlap = set(years) & set(train_years)
+        if overlap:
+            raise ValueError(
+                f"year(s) in both years and train_years (would evaluate on "
+                f"training data): {sorted(overlap)}"
+            )
+
     columns = ["year", "classifier", "accuracy", "precision", "recall", "f1"]
     rows = []
     for year in years:
