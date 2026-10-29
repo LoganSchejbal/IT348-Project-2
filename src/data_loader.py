@@ -8,13 +8,21 @@ hard-coded here.
 """
 
 import re
+import warnings
 from pathlib import Path
 
 import pandas as pd
 
 # Matches filenames like "sampled_2014_malware_api.csv" and captures the
-# year and class-label token so both can be parsed in one place.
-_FILENAME_PATTERN = re.compile(r"sampled_(\d{4})_(benign|malware)_api\.csv$")
+# year and class-label token so both can be parsed in one place. Matched
+# case-insensitively so this stays consistent with
+# extract_label_from_filename, which also lowercases before matching.
+_FILENAME_PATTERN = re.compile(r"sampled_(\d{4})_(benign|malware)_api\.csv$", re.IGNORECASE)
+
+# Expected shape (rows, columns) of a raw dataset file before the first
+# column is dropped, per AGENTS.md/ASSIGNMENT.md. Used only to warn about
+# anomalies, not to reject files, since real data is known to deviate.
+_EXPECTED_RAW_SHAPE = (1500, 1849)
 
 
 def extract_label_from_filename(filename: str) -> int:
@@ -92,8 +100,25 @@ def load_single_file(path: Path) -> pd.DataFrame:
         columns appended to the original API-call feature columns.
     """
     df = pd.read_csv(path)
+    # Flag unexpected shapes (e.g. a differently-sampled file) before the
+    # first column is dropped, so anomalies surface automatically instead
+    # of relying on manual inspection when writing docs/step1_data_summary.md.
+    if df.shape != _EXPECTED_RAW_SHAPE:
+        warnings.warn(
+            f"{path.name}: expected raw shape {_EXPECTED_RAW_SHAPE}, got {df.shape}",
+            stacklevel=2,
+        )
     # The first column is an app identifier (e.g. "apkname"), not a feature.
     df = df.drop(columns=df.columns[0])
+    # label/year are added below; if either name already exists among the
+    # feature columns, assign() would silently overwrite it and
+    # get_feature_columns would then silently lose a real feature.
+    collisions = {"label", "year"} & set(df.columns)
+    if collisions:
+        raise ValueError(
+            f"{path.name}: feature column(s) {sorted(collisions)} collide with "
+            "reserved 'label'/'year' column names"
+        )
     # Assign both columns together (rather than one at a time) to avoid
     # repeated in-place inserts on a wide dataframe.
     return df.assign(
