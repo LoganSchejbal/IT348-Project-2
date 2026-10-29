@@ -120,3 +120,134 @@ FAILED tests/test_step1_data_loader.py::test_real_data_file_has_expected_row_cou
 FAILED tests/test_step1_data_loader.py::test_real_data_year_has_expected_combined_row_count
 ======================== 2 failed, 14 passed in 7.96s =========================
 ```
+
+### Run 2: FAILED
+
+- Time: 2026-10-28T22:56:31-05:00
+- Commit: 172aa08
+- Result: 2 failed, 14 passed, 21 warnings in 3.38s
+- Files: test_step1_data_loader.py
+
+```
+... (16 earlier lines omitted)
+tests/test_step1_data_loader.py::test_load_year_data_missing_file_raises PASSED [ 62%]
+tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year PASSED [ 68%]
+tests/test_step1_data_loader.py::test_discover_dataset_files_finds_all_class_files PASSED [ 75%]
+tests/test_step1_data_loader.py::test_load_year_data_has_no_missing_values PASSED [ 81%]
+tests/test_step1_data_loader.py::test_real_data_file_has_expected_row_count FAILED [ 87%]
+tests/test_step1_data_loader.py::test_real_data_year_has_expected_combined_row_count FAILED [ 93%]
+tests/test_step1_data_loader.py::test_real_data_has_no_missing_values PASSED [100%]
+
+================================== FAILURES ===================================
+_________________ test_real_data_file_has_expected_row_count __________________
+
+real_data_dir = WindowsPath('C:/Users/logan/Documents/IT348/Project 2/input_data')
+
+    def test_real_data_file_has_expected_row_count(real_data_dir):
+        """Per the assignment, each real dataset file has 1,500 rows."""
+        path = real_data_dir / "sampled_2014_benign_api.csv"
+        if not path.exists():
+            pytest.skip("sampled_2014_benign_api.csv not found in input_data/")
+        df = load_single_file(path)
+>       assert len(df) == 1500
+E       assert 9000 == 1500
+E        +  where 9000 = len(      Landroid/accounts/AbstractAccountAuthenticator;.getAccountRemovalAllowed:(Landroid/accounts/AccountAuthenticatorResponse;Landroid/accounts/Account;)Landroid/os/Bundle;  ...  year\n0                                                     0                                                                                                                        ...  2014\n1                                                     0                                                                                                                        ...  2014\n2                                                     0                                                                                                                        ...  2014\n3                                                     0                                                                                                                        ...  2014\n4                                                     0                                                                                                                        ...  2014\n...                                                 ...                                                                                                                        ...   ...\n8995                                                  0                                                                                                                        ...  2014\n8996                                                  0                                                                                                                        ...  2014\n8997                                                  0                                                                                                                        ...  2014\n8998                                                  0                                                                                                                        ...  2014\n8999                                                  0                                                                                                                        ...  2014\n\n[9000 rows x 1850 columns])
+
+tests\test_step1_data_loader.py:160: AssertionError
+_____________ test_real_data_year_has_expected_combined_row_count _____________
+
+real_data_dir = WindowsPath('C:/Users/logan/Documents/IT348/Project 2/input_data')
+
+    def test_real_data_year_has_expected_combined_row_count(real_data_dir):
+        """Per the assignment, a year's combined benign+malware data should have 3,000 rows (1,500 each)."""
+        years_present = {
+            int(p.name.split("_")[1]) for p in discover_dataset_files(real_data_dir)
+        }
+        if not years_present:
+            pytest.skip("No dataset files found in input_data/")
+        year = sorted(years_present)[0]
+        combined = load_year_data(real_data_dir, year)
+>       assert len(combined) == 3000
+E       assert 18000 == 3000
+E        +  where 18000 = len(       Landroid/accounts/AbstractAccountAuthenticator;.getAccountRemovalAllowed:(Landroid/accounts/AccountAuthenticatorResponse;Landroid/accounts/Account;)Landroid/os/Bundle;  ...  year\n0                                                      0                                                                                                                        ...  2014\n1                                                      0                                                                                                                        ...  2014\n2                                                      0                                                                                                                        ...  2014\n3                                                      0                                                                                                                        ...  2014\n4                                                      0                                                                                                                        ...  2014\n...                                                  ...                                                                                                                        ...   ...\n17995                                                  0                                                                                                                        ...  2014\n17996                                                  0                                                                                                                        ...  2014\n17997                                                  0                                                                                                                        ...  2014\n17998                                                  0                                                                                                                        ...  2014\n17999                                                  0                                                                                                                        ...  2014\n\n[18000 rows x 1850 columns])
+
+tests\test_step1_data_loader.py:172: AssertionError
+============================== warnings summary ===============================
+tests/test_step1_data_loader.py::test_load_single_file_drops_first_column
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:77: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    df = load_single_file(path)
+
+tests/test_step1_data_loader.py::test_load_single_file_feature_count_preserved
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:84: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    df = load_single_file(path)
+
+tests/test_step1_data_loader.py::test_load_single_file_label_matches_filename
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:95: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    benign_df = load_single_file(synthetic_data_dir / "sampled_2014_benign_api.csv")
+
+tests/test_step1_data_loader.py::test_load_single_file_label_matches_filename
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:96: UserWarning: sampled_2014_malware_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    malware_df = load_single_file(synthetic_data_dir / "sampled_2014_malware_api.csv")
+
+tests/test_step1_data_loader.py::test_load_year_data_labels_only_two_classes
+tests/test_step1_data_loader.py::test_load_year_data_combines_both_classes
+tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year
+tests/test_step1_data_loader.py::test_load_year_data_has_no_missing_values
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:155: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    frames.append(load_single_file(file_path))
+
+tests/test_step1_data_loader.py::test_load_year_data_labels_only_two_classes
+tests/test_step1_data_loader.py::test_load_year_data_combines_both_classes
+tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year
+tests/test_step1_data_loader.py::test_load_year_data_has_no_missing_values
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:155: UserWarning: sampled_2014_malware_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    frames.append(load_single_file(file_path))
+
+tests/test_step1_data_loader.py::test_load_single_file_row_count
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:112: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    df = load_single_file(synthetic_data_dir / "sampled_2014_benign_api.csv")
+
+tests/test_step1_data_loader.py::test_load_year_data_missing_file_raises
+tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:155: UserWarning: sampled_2015_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    frames.append(load_single_file(file_path))
+
+tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:155: UserWarning: sampled_2015_malware_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    frames.append(load_single_file(file_path))
+
+tests/test_step1_data_loader.py::test_real_data_file_has_expected_row_count
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:159: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (9000, 1849)
+    df = load_single_file(path)
+
+tests/test_step1_data_loader.py::test_real_data_year_has_expected_combined_row_count
+tests/test_step1_data_loader.py::test_real_data_has_no_missing_values
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:155: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (9000, 1849)
+    frames.append(load_single_file(file_path))
+
+tests/test_step1_data_loader.py::test_real_data_year_has_expected_combined_row_count
+tests/test_step1_data_loader.py::test_real_data_has_no_missing_values
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:155: UserWarning: sampled_2014_malware_api.csv: expected raw shape (1500, 1849), got (9000, 1849)
+    frames.append(load_single_file(file_path))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED tests/test_step1_data_loader.py::test_extract_label_from_filename_malware
+PASSED tests/test_step1_data_loader.py::test_extract_label_from_filename_benign
+PASSED tests/test_step1_data_loader.py::test_extract_label_from_filename_invalid_raises
+PASSED tests/test_step1_data_loader.py::test_load_single_file_drops_first_column
+PASSED tests/test_step1_data_loader.py::test_load_single_file_feature_count_preserved
+PASSED tests/test_step1_data_loader.py::test_load_single_file_label_matches_filename
+PASSED tests/test_step1_data_loader.py::test_load_year_data_labels_only_two_classes
+PASSED tests/test_step1_data_loader.py::test_load_single_file_row_count
+PASSED tests/test_step1_data_loader.py::test_load_year_data_combines_both_classes
+PASSED tests/test_step1_data_loader.py::test_load_year_data_missing_file_raises
+PASSED tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year
+PASSED tests/test_step1_data_loader.py::test_discover_dataset_files_finds_all_class_files
+PASSED tests/test_step1_data_loader.py::test_load_year_data_has_no_missing_values
+PASSED tests/test_step1_data_loader.py::test_real_data_has_no_missing_values
+FAILED tests/test_step1_data_loader.py::test_real_data_file_has_expected_row_count
+FAILED tests/test_step1_data_loader.py::test_real_data_year_has_expected_combined_row_count
+================== 2 failed, 14 passed, 21 warnings in 3.38s ==================
+```
