@@ -25,7 +25,7 @@ One row per comment above, with the same number. Decision is Accepted or Rejecte
 
 | # | Decision | Reason | Fixed in commit |
 | --- | --- | --- | --- |
-| 1 | Accepted | Good check | Commit |
-| 2 | Accepted | Valid check | Commit |
-| 3 | Accepted | Extend the check | Commit | 
-| 4 | Accepted | Good documentation | Commit |
+| 1 | Accepted | Good check | b24333f |
+| 2 | Accepted | Valid check | b7ad374 |
+| 3 | Accepted | Extend the check | b24333f | 
+| 4 | Accepted | Good documentation | aba96f7 |
