@@ -66,12 +66,19 @@ def split_by_year(
         boundary.
 
     Raises:
-        ValueError: If any year in `train_years` or `test_years` is not a
-            key of `year_data`.
+        ValueError: If `train_years` or `test_years` is empty, if any year
+            in either is not a key of `year_data`, or if the two lists
+            share a year (which would leak that year's rows into both the
+            training and testing dataframes).
     """
+    if not train_years or not test_years:
+        raise ValueError("train_years and test_years must both be non-empty")
     missing = [year for year in (*train_years, *test_years) if year not in year_data]
     if missing:
         raise ValueError(f"year(s) not found in year_data: {missing}")
+    overlap = set(train_years) & set(test_years)
+    if overlap:
+        raise ValueError(f"year(s) in both train_years and test_years: {sorted(overlap)}")
     train_df = pd.concat([year_data[year] for year in train_years], ignore_index=True)
     test_df = pd.concat([year_data[year] for year in test_years], ignore_index=True)
     return train_df, test_df
