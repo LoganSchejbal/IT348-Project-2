@@ -63,9 +63,27 @@ def compute_drift_between_years(
     Returns:
         A dataframe indexed by feature name with columns `statistic` and
         `p_value`, one row per feature in `feature_cols`.
+
+    Raises:
+        ValueError: If `year_a` or `year_b` is not a key in `year_data`, or
+            if any name in `feature_cols` is not a column of both years'
+            dataframes. Named explicitly here instead of surfacing as a
+            raw `KeyError`, for consistency with `split_by_year` (Step 3).
     """
+    for year in (year_a, year_b):
+        if year not in year_data:
+            raise ValueError(f"year {year} not found in year_data")
     df_a = year_data[year_a]
     df_b = year_data[year_b]
+    missing = [
+        feature
+        for feature in feature_cols
+        if feature not in df_a.columns or feature not in df_b.columns
+    ]
+    if missing:
+        raise ValueError(
+            f"feature(s) not found in year {year_a} and/or {year_b}: {missing}"
+        )
     rows = {
         feature: ks_test_feature(df_a[feature], df_b[feature])
         for feature in feature_cols
