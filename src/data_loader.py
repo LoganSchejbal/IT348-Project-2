@@ -20,8 +20,10 @@ import pandas as pd
 _FILENAME_PATTERN = re.compile(r"sampled_(\d{4})_(benign|malware)_api\.csv$", re.IGNORECASE)
 
 # Expected shape (rows, columns) of a raw dataset file before the first
-# column is dropped, per AGENTS.md/ASSIGNMENT.md. Used only to warn about
-# anomalies, not to reject files, since real data is known to deviate.
+# column is dropped, per AGENTS.md/ASSIGNMENT.md. A column-count mismatch
+# only triggers a warning (files are not rejected), but a row count above
+# this is truncated to the expected row count (see load_single_file) so
+# every file contributes the documented sample size.
 _EXPECTED_RAW_SHAPE = (1500, 1849)
 
 
@@ -108,6 +110,13 @@ def load_single_file(path: Path) -> pd.DataFrame:
             f"{path.name}: expected raw shape {_EXPECTED_RAW_SHAPE}, got {df.shape}",
             stacklevel=2,
         )
+    # Some real files (2014-2018) contain more rows than AGENTS.md's stated
+    # 1,500 per file. Take the first N rows deterministically so every file
+    # contributes the documented sample size instead of over-representing
+    # years that happen to have extra rows.
+    expected_rows = _EXPECTED_RAW_SHAPE[0]
+    if len(df) > expected_rows:
+        df = df.iloc[:expected_rows].reset_index(drop=True)
     # The first column is an app identifier (e.g. "apkname"), not a feature.
     df = df.drop(columns=df.columns[0])
     # label/year are added below; if either name already exists among the
