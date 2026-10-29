@@ -31,8 +31,8 @@ One row per failing test. Decision is "Accepted" (the test is right; the builder
 
 | Test | Cause | Decision | Fixed in commit |
 | --- | --- | --- | --- |
-| `test_real_data_file_has_expected_row_count` | File is too large | Accepted | Commit |
-| `test_real_data_year_has_expected_combined_row_count` | File is too large | Accepted | Commit |
+| `test_real_data_file_has_expected_row_count` | File is too large | Accepted | 361a01d |
+| `test_real_data_year_has_expected_combined_row_count` | File is too large | Accepted | 361a01d |
 
 ## Runs (added by `python harness.py test N`; do not edit)
 

@@ -20,3 +20,7 @@ One row per comment above, with the same number. Decision is Accepted or Rejecte
 
 | # | Decision | Reason | Fixed in commit |
 | --- | --- | --- | --- |
+| 1 | Accepted | Good safeguard | Commit |
+| 2 | Accepted | Valid check | Commit |
+| 3 | Accepted | Always good to be precise in documentation | Commit |
+| 4 | Accpeted | Should definetly check - mistakes happen | Commit |
