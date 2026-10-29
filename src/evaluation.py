@@ -63,8 +63,9 @@ def evaluate_all(
         naming it, and "accuracy", "precision", "recall", "f1" columns from
         `evaluate_classifier`.
     """
+    columns = ["classifier", "accuracy", "precision", "recall", "f1"]
     rows = []
     for name, model in models.items():
         metrics = evaluate_classifier(model, X_test, y_test)
         rows.append({"classifier": name, **metrics})
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=columns)
