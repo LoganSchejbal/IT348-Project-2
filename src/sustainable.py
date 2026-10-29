@@ -38,6 +38,7 @@ def static_model_trajectory(
     feature_cols: list[str],
     scaler: StandardScaler,
     test_years: list[int],
+    train_years: list[int] | None = None,
 ) -> pd.DataFrame:
     """Score the never-updated Step 4/6 models on each test year.
 
@@ -58,13 +59,19 @@ def static_model_trajectory(
             on the training years). Only `.transform()` is called on it.
         test_years: The years to score, e.g. the later half from
             `preprocessing.split_years_in_half`.
+        train_years: Optional. The years `models`/`scaler` were fit on.
+            Forwarded to `evaluation.evaluate_by_year`, which raises if any
+            of `test_years` overlaps with it -- the same leakage guard the
+            Step 6 baseline uses, now exercised here too.
 
     Returns:
         A dataframe with one row per `(year, classifier)`, columns "year",
         "classifier", "accuracy", "precision", "recall", "f1" -- identical
         in shape to `evaluation.evaluate_by_year`'s output.
     """
-    return evaluate_by_year(models, year_data, feature_cols, scaler, test_years)
+    return evaluate_by_year(
+        models, year_data, feature_cols, scaler, test_years, train_years=train_years
+    )
 
 
 def retraining_trajectory(
@@ -106,8 +113,10 @@ def retraining_trajectory(
         `run_sustainability_comparison`, add that themselves).
 
     Raises:
-        ValueError: If `train_years` or `test_years` is empty, or if any
-            year in either is missing from `year_data`.
+        ValueError: If `train_years` or `test_years` is empty, if any year
+            in either is missing from `year_data`, or if `train_years` and
+            `test_years` overlap (a year scored on the same round that
+            fits it would silently leak).
     """
     if not train_years or not test_years:
         raise ValueError("train_years and test_years must both be non-empty")
@@ -117,6 +126,11 @@ def retraining_trajectory(
     ]
     if missing:
         raise ValueError(f"year(s) not found in year_data: {missing}")
+    overlap = set(train_years) & set(ordered_test_years)
+    if overlap:
+        raise ValueError(
+            f"train_years and test_years must be disjoint; overlap={sorted(overlap)}"
+        )
 
     current_years = sorted(set(train_years))
     rows = []
@@ -227,9 +241,12 @@ def run_sustainability_comparison(
         covering every classifier in `classifier_factories`.
 
     Raises:
-        ValueError: If `classifier_factories` and `models` do not share the
-            same set of classifier names.
+        ValueError: If `classifier_factories` is empty, or if
+            `classifier_factories` and `models` do not share the same set
+            of classifier names.
     """
+    if not classifier_factories:
+        raise ValueError("classifier_factories must be non-empty")
     if set(classifier_factories) != set(models):
         raise ValueError(
             "classifier_factories and models must have the same classifier "
@@ -237,12 +254,19 @@ def run_sustainability_comparison(
             f"models-only={sorted(set(models) - set(classifier_factories))}"
         )
 
-    static_df = static_model_trajectory(models, year_data, feature_cols, scaler, test_years)
+    # Normalize once so static_model_trajectory (via evaluate_by_year, which
+    # does not sort/dedupe) and retraining_trajectory (which does) always
+    # see the identical set of years in the identical order.
+    ordered_test_years = sorted(set(test_years))
+
+    static_df = static_model_trajectory(
+        models, year_data, feature_cols, scaler, ordered_test_years, train_years=train_years
+    )
 
     retrained_frames = []
     for name, factory in classifier_factories.items():
         trajectory = retraining_trajectory(
-            factory, year_data, feature_cols, train_years, test_years
+            factory, year_data, feature_cols, train_years, ordered_test_years
         )
         retrained_frames.append(trajectory.assign(classifier=name))
     retrained_df = pd.concat(retrained_frames, ignore_index=True)
