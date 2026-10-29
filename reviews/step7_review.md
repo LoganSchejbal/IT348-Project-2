@@ -20,7 +20,7 @@ One row per comment above, with the same number. Decision is Accepted or Rejecte
 
 | # | Decision | Reason | Fixed in commit |
 | --- | --- | --- | --- |
-| 1 | Accepted | Needed safety mechanism | Commit |
-| 2 | Accepted | Should implement guard | Commit |
-| 3 | Accepted | Should be consistent | Commit |
-| 4 | Accepted | Should have a specific error, not generic | Commit |
+| 1 | Accepted | Needed safety mechanism | 2aff05f |
+| 2 | Accepted | Should implement guard | 2aff05f |
+| 3 | Accepted | Should be consistent | 2aff05f |
+| 4 | Accepted | Should have a specific error, not generic | 2aff05f |
