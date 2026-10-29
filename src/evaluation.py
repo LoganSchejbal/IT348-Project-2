@@ -1,16 +1,22 @@
-"""Step 5: evaluate trained classifiers on the pooled test set.
+"""Step 5-6: evaluate trained classifiers on the pooled test set and by year.
 
 Scores each classifier from Step 4 (`src/models.py`) on the already-scaled
 test features from Step 3 (`src/preprocessing.py`), computing accuracy,
 precision, recall, and F1-score with malware (`label == 1`) as the positive
-class, per AGENTS.md. Only `.predict()` is ever called on the test data here;
-nothing in this module fits anything, so Step 5 cannot introduce leakage on
-its own.
+class, per AGENTS.md. Step 6 (`evaluate_by_year`) extends this to score each
+test year individually, using the same already-fit `StandardScaler` from
+Step 3 so the drift effect on each later year can be seen as the gap from
+the training years grows. Only `.predict()`/`.transform()` are ever called
+on test data here; nothing in this module fits anything, so Steps 5-6 cannot
+introduce leakage on their own.
 """
 
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.preprocessing import StandardScaler
+
+from src.preprocessing import scale_features
 
 # Malware is the positive class for precision/recall/F1 per AGENTS.md.
 _POSITIVE_LABEL = 1
@@ -68,4 +74,50 @@ def evaluate_all(
     for name, model in models.items():
         metrics = evaluate_classifier(model, X_test, y_test)
         rows.append({"classifier": name, **metrics})
+    return pd.DataFrame(rows, columns=columns)
+
+
+def evaluate_by_year(
+    models: dict[str, object],
+    year_data: dict[int, pd.DataFrame],
+    feature_cols: list[str],
+    scaler: StandardScaler,
+    years: list[int],
+) -> pd.DataFrame:
+    """Score every classifier on each requested year individually.
+
+    For each year in `years`, scales that year's features with the
+    already-fit `scaler` (never re-fit here) and scores every model in
+    `models` on it, so performance can be compared year-by-year instead of
+    only on the pooled test set from Step 5. Intended for the test years
+    (e.g. the later half from `preprocessing.split_years_in_half`), to show
+    how performance changes as the gap from the training years grows.
+
+    Args:
+        models: Mapping of classifier name to a fitted estimator, e.g. from
+            `models.train_classifiers`.
+        year_data: Mapping of year to that year's combined dataframe, as
+            returned by `data_loader.load_all_years`.
+        feature_cols: Feature column names, as returned by
+            `data_loader.get_feature_columns`.
+        scaler: A `StandardScaler` already fit on the training years (see
+            `preprocessing.fit_scaler`). Only `.transform()` is called on
+            it here; it is never re-fit, so evaluating by year introduces
+            no leakage from any of `years` back into the scaler.
+        years: The years to evaluate, e.g. the test years.
+
+    Returns:
+        A dataframe with one row per `(year, classifier)` combination, with
+        columns "year", "classifier", "accuracy", "precision", "recall",
+        "f1". Each metric is a float in [0, 1].
+    """
+    columns = ["year", "classifier", "accuracy", "precision", "recall", "f1"]
+    rows = []
+    for year in years:
+        year_df = year_data[year]
+        X_year = scale_features(year_df, feature_cols, scaler)
+        y_year = year_df["label"]
+        for name, model in models.items():
+            metrics = evaluate_classifier(model, X_year, y_year)
+            rows.append({"year": year, "classifier": name, **metrics})
     return pd.DataFrame(rows, columns=columns)
