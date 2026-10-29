@@ -6,6 +6,11 @@ scales the features with a `StandardScaler` fit only on the training
 dataframe. Test-year data is only ever transformed, never used to fit the
 scaler, so no information from the test years leaks into the fitted
 scaler (see PLAN.md's leakage-prevention section).
+
+`split_years_in_half`, also defined here, decides the train/test year
+boundary itself (earlier half trains, later half tests); it is the most
+leakage-sensitive function in this module since every other function's
+notion of "training years" traces back to its output.
 """
 
 import numpy as np
