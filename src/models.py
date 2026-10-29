@@ -38,7 +38,19 @@ def get_classifier_factories(
           converges on 1,848 scaled features).
         - "random_forest": a non-linear ensemble (`RandomForestClassifier`)
           that can capture feature interactions the linear model cannot.
+          Uses `n_jobs=-1` to parallelize tree training across all
+          available cores, since 1,848 features makes single-threaded
+          training a significant and avoidable slowdown, especially in
+          Step 7's retraining loop where a fresh forest is refit each
+          round.
     """
+    # class_weight is intentionally left at its default (None, i.e. equal
+    # weight) for both classifiers: per AGENTS.md, every sampled_<year>_*
+    # file pair contributes 1,500 benign + 1,500 malware rows, so any
+    # concatenation of full years stays balanced 50/50 and reweighting is
+    # unnecessary. This assumption lives in the dataset, not in this
+    # function, so it would need revisiting if a later step ever subsets
+    # or drops rows before training.
     return {
         "logistic_regression": lambda: LogisticRegression(
             random_state=random_state,
@@ -47,6 +59,7 @@ def get_classifier_factories(
         "random_forest": lambda: RandomForestClassifier(
             random_state=random_state,
             n_estimators=100,
+            n_jobs=-1,
         ),
     }
 

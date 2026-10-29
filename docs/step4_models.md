@@ -19,6 +19,15 @@ feature interactions:
   without needing feature selection (each tree only splits on a random subset
   of features at each node).
 
+`class_weight` is intentionally left at its default (`None`, i.e. equal
+weight) for both classifiers. Per `AGENTS.md`, every
+`sampled_<year>_<class>_api.csv` file pair contributes exactly 1,500 benign +
+1,500 malware rows, so any concatenation of full years (as Step 1 does) stays
+balanced 50/50 and reweighting is unnecessary. This assumption lives in the
+dataset, not in `models.py`, so it is noted here and as a comment in
+`get_classifier_factories` in case a later step ever subsets or drops rows
+before training.
+
 Both are built from `get_classifier_factories()` in `src/models.py`, which is
 the single source of truth for their hyperparameters: it returns
 zero-argument factories (not instances), so Step 7's retraining loop can ask
@@ -36,7 +45,7 @@ features, balanced 6,000/6,000 benign/malware).
 | Classifier | Key hyperparameters | `random_state` |
 | --- | --- | --- |
 | `logistic_regression` | `max_iter=1000` (raised from the default 100 so `lbfgs` reliably converges on 1,848 scaled features); all other parameters left at scikit-learn defaults (`penalty` defaults to L2, `C=1.0`, `solver="lbfgs"`) | 42 |
-| `random_forest` | `n_estimators=100`; all other parameters left at scikit-learn defaults (`max_depth=None`, `max_features="sqrt"`, `criterion="gini"`) | 42 |
+| `random_forest` | `n_estimators=100`, `n_jobs=-1` (parallelizes tree training across all available cores; does not affect reproducibility, which is still controlled by `random_state`); all other parameters left at scikit-learn defaults (`max_depth=None`, `max_features="sqrt"`, `criterion="gini"`) | 42 |
 
 `random_state=42` is passed to `get_classifier_factories` (and defaulted
 there) so both classifiers are reproducible across runs.
