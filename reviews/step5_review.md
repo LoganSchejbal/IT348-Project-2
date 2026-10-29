@@ -20,5 +20,5 @@ One row per comment above, with the same number. Decision is Accepted or Rejecte
 
 | # | Decision | Reason | Fixed in commit |
 | --- | --- | --- | --- |
-| 1 | Accepted | Good to be specific | Commit |
-| 2 | Accepted | Always want a good safeguard | Commit |
+| 1 | Accepted | Good to be specific | 8460f2a |
+| 2 | Accepted | Always want a good safeguard | d7ff207 |
