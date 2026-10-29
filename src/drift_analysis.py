@@ -28,7 +28,18 @@ def ks_test_feature(series_a: pd.Series, series_b: pd.Series) -> tuple[float, fl
         A tuple (statistic, p_value) from `scipy.stats.ks_2samp`. The
         statistic is in [0, 1]; larger means the two samples' distributions
         differ more.
+
+    Raises:
+        ValueError: If either series contains a NaN. `scipy.stats.ks_2samp`
+            silently returns `(nan, nan)` on NaN input rather than raising,
+            which would otherwise let a feature with missing values sort
+            to the bottom of `top_drifting_features` with no warning.
     """
+    if series_a.isna().any() or series_b.isna().any():
+        raise ValueError(
+            "ks_test_feature received a series with NaN values; "
+            "drop or impute missing values before computing drift"
+        )
     result = stats.ks_2samp(series_a, series_b)
     return float(result.statistic), float(result.pvalue)
 
