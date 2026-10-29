@@ -19,6 +19,6 @@ One row per comment above, with the same number. Decision is Accepted or Rejecte
 
 | # | Decision | Reason | Fixed in commit |
 | --- | --- | --- | --- |
-| 1 | Accepted | Need to warn when there is an issue | commit |
-| 2 | Accepted | Should account for this issue | commit | 
-| 3 | Accepted | Should validate | commit |
+| 1 | Accepted | Need to warn when there is an issue | 4d40562 |
+| 2 | Accepted | Should account for this issue | 4d40562 | 
+| 3 | Accepted | Should validate | 4d40562 |
