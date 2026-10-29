@@ -5,6 +5,12 @@ distribution between pairs of years. This is purely descriptive: nothing
 computed here is fit to the data, so it cannot leak test-year information
 into any model fit in later steps (see PLAN.md's leakage-prevention
 section).
+
+Constant or all-zero features are safe to pass through unmodified:
+`scipy.stats.ks_2samp` returns `statistic=0.0, p_value=1.0` (no drift, no
+error or warning) when both samples are constant/identical, which is the
+correct result for a feature that never varies. This was verified against
+the real 2014 data, where ~47% of features are entirely zero for that year.
 """
 
 import pandas as pd
