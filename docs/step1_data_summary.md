@@ -14,31 +14,32 @@ Written by the builder agent.
 Every file has 1849 columns before loading; `load_single_file` drops the
 first column (`apkname`, an app identifier, not a feature), leaving 1848
 feature columns plus the added `label` and `year` columns. Row counts per
-file are **not uniform across years** (see Issues found below):
+file are now **uniform across years** after truncation (see Issues found
+below):
 
 | Year | Benign rows | Malware rows | Combined rows (`load_year_data`) | Feature columns |
 |------|-------------|--------------|-----------------------------------|------------------|
-| 2014 | 9000 | 9000 | 18000 | 1848 |
-| 2015 | 9000 | 9000 | 18000 | 1848 |
-| 2016 | 9000 | 9000 | 18000 | 1848 |
-| 2017 | 9000 | 9000 | 18000 | 1848 |
-| 2018 | 9000 | 9000 | 18000 | 1848 |
+| 2014 | 1500 | 1500 | 3000 | 1848 |
+| 2015 | 1500 | 1500 | 3000 | 1848 |
+| 2016 | 1500 | 1500 | 3000 | 1848 |
+| 2017 | 1500 | 1500 | 3000 | 1848 |
+| 2018 | 1500 | 1500 | 3000 | 1848 |
 | 2019 | 1500 | 1500 | 3000 | 1848 |
 | 2020 | 1500 | 1500 | 3000 | 1848 |
 | 2021 | 1500 | 1500 | 3000 | 1848 |
 
 `load_all_years` returns one dataframe per discovered year (8 entries),
-matching this table; combined across all years that is 99000 rows total.
+matching this table; combined across all years that is 24000 rows total.
 
 ## Class counts per year
 
 | Year | Malware (label=1) | Benign (label=0) |
 |------|--------------------|-------------------|
-| 2014 | 9000 | 9000 |
-| 2015 | 9000 | 9000 |
-| 2016 | 9000 | 9000 |
-| 2017 | 9000 | 9000 |
-| 2018 | 9000 | 9000 |
+| 2014 | 1500 | 1500 |
+| 2015 | 1500 | 1500 |
+| 2016 | 1500 | 1500 |
+| 2017 | 1500 | 1500 |
+| 2018 | 1500 | 1500 |
 | 2019 | 1500 | 1500 |
 | 2020 | 1500 | 1500 |
 | 2021 | 1500 | 1500 |
@@ -48,12 +49,15 @@ verified with `df["label"].value_counts()` on each year's combined dataframe.
 
 ## Issues found
 
-AGENTS.md states each file has 1,500 rows, but the real files for 2014-2018
-have 9,000 rows each (1,849 columns matches AGENTS.md in every file, so only
-the row count differs). This was confirmed directly against the CSVs (`wc -l`
-on each file, one less than the printed line count for the header), not just
-through the loader. The loader itself makes no assumption about row count —
-`load_year_data`/`load_all_years` work correctly regardless of how many rows
-each file has — so this does not require a code change, only a note that the
-2014-2018 years contribute far more rows than 2019-2021 to the pooled
-training set used in later steps.
+AGENTS.md states each file has 1,500 rows, but the raw CSVs for 2014-2018
+actually have 9,000 rows each (1,849 columns matches AGENTS.md in every
+file, so only the row count differs). This was confirmed directly against
+the CSVs (`wc -l` on each file, one less than the printed line count for the
+header), not just through the loader.
+
+`load_single_file` now truncates any file with more than 1,500 rows down to
+its first 1,500 rows (deterministic, not a random sample), after warning
+about the shape mismatch. This keeps every year's contribution to the
+pooled dataset equal to the documented sample size (1,500 benign + 1,500
+malware), instead of letting 2014-2018 outweigh 2019-2021 five to one in
+later training steps.
