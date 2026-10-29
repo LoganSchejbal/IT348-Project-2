@@ -18,5 +18,5 @@ One row per comment above, with the same number. Decision is Accepted or Rejecte
 
 | # | Decision | Reason | Fixed in commit |
 | --- | --- | --- | --- |
-| 1 | Accepted | Reasonable doc | Commit |
-| 2 | Accepted | More threads should be used | Commit |
+| 1 | Accepted | Reasonable doc | 4291a5b |
+| 2 | Accepted | More threads should be used | 4291a5b |
