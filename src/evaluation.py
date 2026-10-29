@@ -36,12 +36,14 @@ def evaluate_classifier(model: object, X_test: np.ndarray, y_test: pd.Series) ->
     return {
         "accuracy": accuracy_score(y_test, y_pred),
         "precision": precision_score(
-            y_test, y_pred, pos_label=_POSITIVE_LABEL, zero_division=0
+            y_test, y_pred, pos_label=_POSITIVE_LABEL, average="binary", zero_division=0
         ),
         "recall": recall_score(
-            y_test, y_pred, pos_label=_POSITIVE_LABEL, zero_division=0
+            y_test, y_pred, pos_label=_POSITIVE_LABEL, average="binary", zero_division=0
         ),
-        "f1": f1_score(y_test, y_pred, pos_label=_POSITIVE_LABEL, zero_division=0),
+        "f1": f1_score(
+            y_test, y_pred, pos_label=_POSITIVE_LABEL, average="binary", zero_division=0
+        ),
     }
 
 
