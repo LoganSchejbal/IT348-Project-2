@@ -253,3 +253,115 @@ FAILED tests/test_step1_data_loader.py::test_real_data_file_has_expected_row_cou
 FAILED tests/test_step1_data_loader.py::test_real_data_year_has_expected_combined_row_count
 ================== 2 failed, 14 passed, 21 warnings in 3.38s ==================
 ```
+
+### Run 3: PASSED
+
+- Time: 2026-10-28T23:40:28-05:00
+- Commit: a7f1995
+- Result: 16 passed, 21 warnings in 2.17s
+- Files: test_step1_data_loader.py
+
+```
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.1.1, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\logan\Documents\IT348\Project 2
+configfile: pytest.ini
+collecting ... collected 16 items
+
+tests/test_step1_data_loader.py::test_extract_label_from_filename_malware PASSED [  6%]
+tests/test_step1_data_loader.py::test_extract_label_from_filename_benign PASSED [ 12%]
+tests/test_step1_data_loader.py::test_extract_label_from_filename_invalid_raises PASSED [ 18%]
+tests/test_step1_data_loader.py::test_load_single_file_drops_first_column PASSED [ 25%]
+tests/test_step1_data_loader.py::test_load_single_file_feature_count_preserved PASSED [ 31%]
+tests/test_step1_data_loader.py::test_load_single_file_label_matches_filename PASSED [ 37%]
+tests/test_step1_data_loader.py::test_load_year_data_labels_only_two_classes PASSED [ 43%]
+tests/test_step1_data_loader.py::test_load_single_file_row_count PASSED  [ 50%]
+tests/test_step1_data_loader.py::test_load_year_data_combines_both_classes PASSED [ 56%]
+tests/test_step1_data_loader.py::test_load_year_data_missing_file_raises PASSED [ 62%]
+tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year PASSED [ 68%]
+tests/test_step1_data_loader.py::test_discover_dataset_files_finds_all_class_files PASSED [ 75%]
+tests/test_step1_data_loader.py::test_load_year_data_has_no_missing_values PASSED [ 81%]
+tests/test_step1_data_loader.py::test_real_data_file_has_expected_row_count PASSED [ 87%]
+tests/test_step1_data_loader.py::test_real_data_year_has_expected_combined_row_count PASSED [ 93%]
+tests/test_step1_data_loader.py::test_real_data_has_no_missing_values PASSED [100%]
+
+============================== warnings summary ===============================
+tests/test_step1_data_loader.py::test_load_single_file_drops_first_column
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:77: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    df = load_single_file(path)
+
+tests/test_step1_data_loader.py::test_load_single_file_feature_count_preserved
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:84: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    df = load_single_file(path)
+
+tests/test_step1_data_loader.py::test_load_single_file_label_matches_filename
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:95: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    benign_df = load_single_file(synthetic_data_dir / "sampled_2014_benign_api.csv")
+
+tests/test_step1_data_loader.py::test_load_single_file_label_matches_filename
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:96: UserWarning: sampled_2014_malware_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    malware_df = load_single_file(synthetic_data_dir / "sampled_2014_malware_api.csv")
+
+tests/test_step1_data_loader.py::test_load_year_data_labels_only_two_classes
+tests/test_step1_data_loader.py::test_load_year_data_combines_both_classes
+tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year
+tests/test_step1_data_loader.py::test_load_year_data_has_no_missing_values
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:164: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    frames.append(load_single_file(file_path))
+
+tests/test_step1_data_loader.py::test_load_year_data_labels_only_two_classes
+tests/test_step1_data_loader.py::test_load_year_data_combines_both_classes
+tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year
+tests/test_step1_data_loader.py::test_load_year_data_has_no_missing_values
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:164: UserWarning: sampled_2014_malware_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    frames.append(load_single_file(file_path))
+
+tests/test_step1_data_loader.py::test_load_single_file_row_count
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:112: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    df = load_single_file(synthetic_data_dir / "sampled_2014_benign_api.csv")
+
+tests/test_step1_data_loader.py::test_load_year_data_missing_file_raises
+tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:164: UserWarning: sampled_2015_benign_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    frames.append(load_single_file(file_path))
+
+tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:164: UserWarning: sampled_2015_malware_api.csv: expected raw shape (1500, 1849), got (5, 5)
+    frames.append(load_single_file(file_path))
+
+tests/test_step1_data_loader.py::test_real_data_file_has_expected_row_count
+  C:\Users\logan\Documents\IT348\Project 2\tests\test_step1_data_loader.py:159: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (9000, 1849)
+    df = load_single_file(path)
+
+tests/test_step1_data_loader.py::test_real_data_year_has_expected_combined_row_count
+tests/test_step1_data_loader.py::test_real_data_has_no_missing_values
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:164: UserWarning: sampled_2014_benign_api.csv: expected raw shape (1500, 1849), got (9000, 1849)
+    frames.append(load_single_file(file_path))
+
+tests/test_step1_data_loader.py::test_real_data_year_has_expected_combined_row_count
+tests/test_step1_data_loader.py::test_real_data_has_no_missing_values
+  C:\Users\logan\Documents\IT348\Project 2\src\data_loader.py:164: UserWarning: sampled_2014_malware_api.csv: expected raw shape (1500, 1849), got (9000, 1849)
+    frames.append(load_single_file(file_path))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED tests/test_step1_data_loader.py::test_extract_label_from_filename_malware
+PASSED tests/test_step1_data_loader.py::test_extract_label_from_filename_benign
+PASSED tests/test_step1_data_loader.py::test_extract_label_from_filename_invalid_raises
+PASSED tests/test_step1_data_loader.py::test_load_single_file_drops_first_column
+PASSED tests/test_step1_data_loader.py::test_load_single_file_feature_count_preserved
+PASSED tests/test_step1_data_loader.py::test_load_single_file_label_matches_filename
+PASSED tests/test_step1_data_loader.py::test_load_year_data_labels_only_two_classes
+PASSED tests/test_step1_data_loader.py::test_load_single_file_row_count
+PASSED tests/test_step1_data_loader.py::test_load_year_data_combines_both_classes
+PASSED tests/test_step1_data_loader.py::test_load_year_data_missing_file_raises
+PASSED tests/test_step1_data_loader.py::test_load_all_years_discovers_every_year
+PASSED tests/test_step1_data_loader.py::test_discover_dataset_files_finds_all_class_files
+PASSED tests/test_step1_data_loader.py::test_load_year_data_has_no_missing_values
+PASSED tests/test_step1_data_loader.py::test_real_data_file_has_expected_row_count
+PASSED tests/test_step1_data_loader.py::test_real_data_year_has_expected_combined_row_count
+PASSED tests/test_step1_data_loader.py::test_real_data_has_no_missing_values
+======================= 16 passed, 21 warnings in 2.17s =======================
+```
