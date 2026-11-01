@@ -231,3 +231,185 @@ def summarize_classifiers(classifiers: dict[str, object]) -> pd.DataFrame:
         for name, model in classifiers.items()
     ]
     return pd.DataFrame(rows, columns=["classifier", "params"])
+
+
+def run_step1_load(context: PipelineContext) -> pd.DataFrame:
+    """Run Step 1 (load the dataset) and summarize it for the console.
+
+    Args:
+        context: The pipeline state; `ensure_data_loaded` fills in
+            `year_data`/`feature_cols`/`train_years`/`test_years` if not
+            already set.
+
+    Returns:
+        `summarize_loaded_years` of `context.year_data`.
+    """
+    ensure_data_loaded(context)
+    return summarize_loaded_years(context.year_data, context.feature_cols)
+
+
+def run_step2_drift(context: PipelineContext) -> pd.DataFrame:
+    """Run Step 2 (drift analysis) and return the top drifting features.
+
+    Args:
+        context: The pipeline state; `ensure_data_loaded` fills in
+            `year_data`/`feature_cols` if not already set.
+
+    Returns:
+        `top_drifting_features` of `compute_drift_across_years`'s output,
+        i.e. the features with the largest KS statistic across
+        consecutive-year pairs.
+    """
+    ensure_data_loaded(context)
+    drift_df = compute_drift_across_years(context.year_data, context.feature_cols)
+    return top_drifting_features(drift_df)
+
+
+def run_step3_preprocess(context: PipelineContext) -> pd.DataFrame:
+    """Run Step 3 (scale and split the data) and summarize it for the console.
+
+    Args:
+        context: The pipeline state; `ensure_preprocessed` fills in
+            `X_train`/`X_test`/`y_train`/`y_test`/`scaler` if not already
+            set.
+
+    Returns:
+        `summarize_preprocessing` of `context`'s train/test split.
+    """
+    ensure_preprocessed(context)
+    return summarize_preprocessing(
+        context.train_years, context.test_years, context.X_train, context.X_test
+    )
+
+
+def run_step4_train(context: PipelineContext) -> pd.DataFrame:
+    """Run Step 4 (train the classifiers) and summarize them for the console.
+
+    Args:
+        context: The pipeline state; `ensure_trained` fills in
+            `classifiers`/`classifier_factories` if not already set.
+
+    Returns:
+        `summarize_classifiers` of `context.classifiers`.
+    """
+    ensure_trained(context)
+    return summarize_classifiers(context.classifiers)
+
+
+def run_step5_evaluate(context: PipelineContext) -> pd.DataFrame:
+    """Run Step 5 (evaluate on the pooled test set).
+
+    Args:
+        context: The pipeline state; `ensure_trained` fills in every
+            prerequisite field if not already set.
+
+    Returns:
+        `evaluation.evaluate_all`'s output: one row per classifier with
+        accuracy/precision/recall/F1 on the pooled test set.
+    """
+    ensure_trained(context)
+    return evaluate_all(context.classifiers, context.X_test, context.y_test)
+
+
+def run_step6_evaluate_by_year(context: PipelineContext) -> pd.DataFrame:
+    """Run Step 6 (evaluate on each test year individually).
+
+    Args:
+        context: The pipeline state; `ensure_trained` fills in every
+            prerequisite field if not already set.
+
+    Returns:
+        `evaluation.evaluate_by_year`'s output: one row per
+        `(year, classifier)` for `context.test_years`.
+    """
+    ensure_trained(context)
+    return evaluate_by_year(
+        context.classifiers,
+        context.year_data,
+        context.feature_cols,
+        context.scaler,
+        context.test_years,
+        train_years=context.train_years,
+    )
+
+
+def run_step7_sustainable(context: PipelineContext) -> pd.DataFrame:
+    """Run Step 7 (static vs. periodic retraining comparison).
+
+    Args:
+        context: The pipeline state; `ensure_trained` fills in every
+            prerequisite field if not already set.
+
+    Returns:
+        `sustainable.run_sustainability_comparison`'s output: one row per
+        `(year, classifier)` with both trajectories' metrics side by side.
+    """
+    ensure_trained(context)
+    return run_sustainability_comparison(
+        context.classifier_factories,
+        context.classifiers,
+        context.year_data,
+        context.feature_cols,
+        context.scaler,
+        context.train_years,
+        context.test_years,
+    )
+
+
+_STEP_RUNNERS: dict[str, Callable[[PipelineContext], pd.DataFrame]] = {
+    "load": run_step1_load,
+    "drift": run_step2_drift,
+    "preprocess": run_step3_preprocess,
+    "train": run_step4_train,
+    "evaluate": run_step5_evaluate,
+    "evaluate-by-year": run_step6_evaluate_by_year,
+    "sustainable": run_step7_sustainable,
+}
+
+
+def format_dataframe_for_console(df: pd.DataFrame) -> str:
+    """Render a dataframe as a console-friendly string.
+
+    Shared by every `run_stepN_*` function's output so every step prints
+    tables the same way.
+
+    Args:
+        df: The dataframe to render.
+
+    Returns:
+        `df.to_string(index=False)`, with float columns rounded to 4
+        decimal places for readability.
+    """
+    return df.round(4).to_string(index=False)
+
+
+def run_selected_step(context: PipelineContext, step: str) -> None:
+    """Run the step named by `--step` and print its result.
+
+    Args:
+        context: The pipeline state to run against.
+        step: One of `cli.STEP_CHOICES`. `"all"` runs every step in order
+            (Steps 1-7); any other value runs just that step.
+    """
+    steps_to_run = _STEP_RUNNERS if step == "all" else {step: _STEP_RUNNERS[step]}
+    for name, runner in steps_to_run.items():
+        print(f"=== {name} ===")
+        print(format_dataframe_for_console(runner(context)))
+        print()
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Entry point for `python -m src.main`.
+
+    Args:
+        argv: Argument strings to parse, or `None` to parse `sys.argv[1:]`.
+            Running with no arguments runs the full pipeline, matching
+            AGENTS.md's documented behavior.
+    """
+    args = parse_args(argv)
+    context = PipelineContext(data_dir=args.data_dir)
+    run_selected_step(context, args.step)
+
+
+if __name__ == "__main__":
+    main()
