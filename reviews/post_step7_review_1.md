@@ -18,3 +18,7 @@ One row per comment above, with the same number. Decision is Accepted or Rejecte
 
 | # | Decision | Reason | Fixed in commit |
 | --- | --- | --- | --- |
+| 1 | Accepted | Should fix this plan | Commit
+| 2 | Accepted | Should have error catching | Commit
+| 3 | Rejected | Out of scope | None |
+| 4 | Rejected | Out of scope | None | 
