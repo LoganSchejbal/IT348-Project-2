@@ -49,9 +49,28 @@ prose and this report. The next builder session that implements
 existing Step 1-7 functions and the tester's forthcoming tests for this
 section.
 
+## Fix-mode update (reviews/post_step7_review_1.md)
+
+A reviewer session reviewed this PLAN.md section and `src/sustainable.py`
+(`reviews/post_step7_review_1.md`). The student accepted comments #1 and
+#2 (both about this section) and rejected #3 and #4 (about
+`src/sustainable.py`, out of scope for this planning-only task). Fixed in
+commit `670296c`:
+
+| # | Comment | Fix |
+| --- | --- | --- |
+| 1 | `format_dataframe_for_console` only accepts one `pd.DataFrame`, but `run_step1_load` was planned to return `dict[int, pd.DataFrame]`, `run_step4_train` a `dict[str, object]` of classifiers, and `run_step3_preprocess` `None` — none fit the shared formatter. | Added three display-only helpers (`summarize_loaded_years`, `summarize_preprocessing`, `summarize_classifiers`) so those three `run_stepN_*` functions each return a single summary `pd.DataFrame` instead. `PipelineContext` still holds the full, unsummarized data for later steps that need it; only the console-facing return value changed. |
+| 2 | The plan didn't say what happens when `--data-dir` points to a missing or empty directory; `discover_dataset_files`/`load_all_years` don't raise on that today, so an empty `year_data` would flow silently into later steps. | `ensure_data_loaded` now checks `data_dir` exists and contains at least one `sampled_*_api.csv` file before calling `load_all_years`, raising a clear `FileNotFoundError` that names `--data-dir` as the thing to check. |
+
+Comments #3 and #4 were rejected by the student as out of scope for this
+task (they concern `src/sustainable.py`, not the Post Step 7 plan), so no
+change was made for them here.
+
 ## Left unfinished
 
 - `src/cli.py` and `src/main.py` are planned but not implemented.
 - This section's tests (listed under "Testing" in `PLAN.md`) have not been
   written; that is the tester's task once the driver exists.
-- No review has been requested yet for this planning-only change.
+- Comments #3 and #4 in `reviews/post_step7_review_1.md` remain open
+  against `src/sustainable.py`; they were rejected by the student, not
+  addressed by this session.
