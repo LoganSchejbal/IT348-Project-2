@@ -10,7 +10,8 @@ touches argument parsing (see PLAN.md's "Post Step 7: Project
 adjustments" section).
 """
 
-from dataclasses import dataclass, field
+import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
@@ -68,7 +69,7 @@ class PipelineContext:
     y_test: pd.Series | None = None
     scaler: StandardScaler | None = None
     classifiers: dict[str, object] | None = None
-    classifier_factories: dict[str, Callable[[], object]] | None = field(default=None)
+    classifier_factories: dict[str, Callable[[], object]] | None = None
 
 
 def ensure_data_loaded(context: PipelineContext) -> None:
@@ -90,6 +91,10 @@ def ensure_data_loaded(context: PipelineContext) -> None:
     Raises:
         FileNotFoundError: If `context.data_dir` does not exist or
             contains no `sampled_*_api.csv` files.
+        ValueError: If the loaded years do not all share the same feature
+            columns (AGENTS.md documents every year as having the same
+            1,848 feature columns; a mismatch would mean a partial or
+            corrupted file for one year).
     """
     if context.year_data is not None:
         return
@@ -99,7 +104,25 @@ def ensure_data_loaded(context: PipelineContext) -> None:
             f"No 'sampled_*_api.csv' files found in {data_dir}; check --data-dir"
         )
     context.year_data = load_all_years(data_dir)
-    context.feature_cols = get_feature_columns(next(iter(context.year_data.values())))
+
+    # Every year is expected to share the same feature columns (AGENTS.md);
+    # validate this explicitly instead of silently picking an arbitrary
+    # year's columns, so a mismatched year fails here, not somewhere deep
+    # in a later step.
+    per_year_columns = {
+        year: get_feature_columns(df) for year, df in context.year_data.items()
+    }
+    first_year, first_columns = next(iter(per_year_columns.items()))
+    mismatched_years = [
+        year for year, cols in per_year_columns.items() if cols != first_columns
+    ]
+    if mismatched_years:
+        raise ValueError(
+            f"Years {sorted(mismatched_years)} have different feature columns "
+            f"than year {first_year}; check their source CSV files."
+        )
+    context.feature_cols = first_columns
+
     context.train_years, context.test_years = split_years_in_half(
         list(context.year_data.keys())
     )
@@ -405,10 +428,22 @@ def main(argv: list[str] | None = None) -> None:
         argv: Argument strings to parse, or `None` to parse `sys.argv[1:]`.
             Running with no arguments runs the full pipeline, matching
             AGENTS.md's documented behavior.
+
+    Raises:
+        SystemExit: With status 1 if a pipeline step raises
+            `FileNotFoundError` or `ValueError` (e.g. a bad `--data-dir`,
+            or years with mismatched feature columns). The error's message
+            is printed to stderr instead of letting a full traceback reach
+            the console user, per PLAN.md's rationale for `ensure_data_loaded`
+            raising an actionable error in the first place.
     """
     args = parse_args(argv)
     context = PipelineContext(data_dir=args.data_dir)
-    run_selected_step(context, args.step)
+    try:
+        run_selected_step(context, args.step)
+    except (FileNotFoundError, ValueError) as error:
+        print(f"Error: {error}", file=sys.stderr)
+        raise SystemExit(1) from error
 
 
 if __name__ == "__main__":
