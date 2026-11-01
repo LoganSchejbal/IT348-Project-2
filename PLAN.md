@@ -121,3 +121,105 @@ This directly answers whether periodic retraining helps and avoids leakage, sinc
 ## Orchestration
 
 `src/main.py` — a `main() -> None` function (invoked by `python -m src.main`) that calls the functions above in order (load data -> drift analysis -> preprocess -> train -> evaluate -> evaluate by year -> sustainable comparison) and prints/saves the results used to fill in the `docs/` reports. No step's hard-coded assumptions (years present, number of classifiers, feature count) belong in `main.py`; those are all derived from `input_data/` and the dicts returned by the functions above.
+
+## Post Step 7: Project adjustments
+
+Steps 1-7 are implemented as library functions in `src/`, but no driver file
+exists yet — there is nothing a grader or the live check-in can actually run
+from the console to see the project work end to end. This section plans a
+console driver that wires the existing Step 1-7 functions together and
+exposes every one of them as a runnable action, without duplicating any of
+their logic. This is a planning-only addition: no code is written under
+this section; it describes what the builder will implement next.
+
+**Approach:** Split the driver into two new, decoupled modules so that
+argument parsing (how the console is driven) stays independent of
+orchestration (what each step does), matching the existing one-module-per-
+concern layout of `src/`:
+
+- `src/cli.py` — owns the console interface only; knows nothing about
+  pandas, scikit-learn, or any Step 1-7 function.
+- `src/main.py` — owns orchestration only; calls the Step 1-7 functions
+  already planned above (`data_loader`, `drift_analysis`, `preprocessing`,
+  `models`, `evaluation`, `sustainable`) and formats their output for the
+  console. `main.py` never parses `sys.argv` itself, so the two concerns
+  can change independently (e.g. adding a new console flag never touches
+  the orchestration code, and adding a new pipeline step never touches
+  argument parsing).
+
+**Files and functions:**
+
+- `src/cli.py`:
+  - `build_arg_parser() -> argparse.ArgumentParser` — defines one
+    `argparse` parser with a `--data-dir` option (default `input_data`,
+    so the dataset location is still determined at run time per AGENTS.md,
+    never hard-coded) and a `--step` option restricted to
+    `{"all", "load", "drift", "preprocess", "train", "evaluate",
+    "evaluate-by-year", "sustainable"}` (default `"all"`), so every
+    Step 1-7 function family is individually reachable from the console
+    as well as runnable together.
+  - `parse_args(argv: list[str] | None = None) -> argparse.Namespace` —
+    thin wrapper around `build_arg_parser().parse_args(argv)`, kept
+    separate so tests can call it directly with a list of strings instead
+    of patching `sys.argv`.
+- `src/main.py`:
+  - `PipelineContext` (a small `dataclass`) — holds whatever state later
+    steps need that earlier steps produced: `data_dir`, `year_data`,
+    `feature_cols`, `train_years`, `test_years`, `X_train`, `X_test`,
+    `y_train`, `y_test`, `scaler`, `classifiers`, `classifier_factories`.
+    Fields start unset (`None`) and are filled in by the step-runner
+    functions below, so each runner can check "has this already been
+    computed by an earlier call?" instead of recomputing it.
+  - `ensure_data_loaded(context: PipelineContext) -> None`,
+    `ensure_preprocessed(context: PipelineContext) -> None`,
+    `ensure_trained(context: PipelineContext) -> None` — each calls the
+    relevant Step 1/3/4 functions (`load_all_years` + `get_feature_columns`
+    + `split_years_in_half`; `prepare_train_test`; `get_classifiers` +
+    `get_classifier_factories` + `train_classifiers`) only if the
+    corresponding `PipelineContext` fields are still unset. This is what
+    lets a console user request a single step (e.g. `--step sustainable`)
+    and still get correct results, because the prerequisite steps it
+    depends on run automatically and only once.
+  - `run_step1_load(context) -> dict[int, pd.DataFrame]`,
+    `run_step2_drift(context) -> pd.DataFrame`,
+    `run_step3_preprocess(context) -> None`,
+    `run_step4_train(context) -> dict[str, object]`,
+    `run_step5_evaluate(context) -> pd.DataFrame`,
+    `run_step6_evaluate_by_year(context) -> pd.DataFrame`,
+    `run_step7_sustainable(context) -> pd.DataFrame` — one function per
+    step, each calling `ensure_*` for whatever it needs first, then
+    calling only the already-planned Step 1-7 functions (no new modeling
+    or data logic lives here), and returning the dataframe/dict that step
+    produces so it can be printed.
+  - `format_dataframe_for_console(df: pd.DataFrame) -> str` — a single
+    shared helper (so every step prints tables the same way) that calls
+    `pandas.DataFrame.to_string(index=False)` and rounds floats for
+    readability.
+  - `run_selected_step(context, step: str) -> None` — maps the `--step`
+    string from `parse_args` onto the `run_stepN_*` functions above
+    (`"all"` runs all seven in order), printing each result with
+    `format_dataframe_for_console`.
+  - `main(argv: list[str] | None = None) -> None` — calls
+    `parse_args(argv)`, builds a `PipelineContext` from `args.data_dir`,
+    and calls `run_selected_step(context, args.step)`. This is the
+    function `python -m src.main` invokes, keeping AGENTS.md's documented
+    run command correct while adding the `--step` option as a console
+    convenience, not a replacement for it (running with no arguments
+    still runs everything, exactly as AGENTS.md describes today).
+
+**Why no new top-level folder:** results are printed to the console, not
+written to a new `results/`-style folder, so this change needs no edit to
+AGENTS.md's folder layout section.
+
+**Report:** `docs/post_step7_project_adjustments.md` — what was planned
+here and why, written by the builder once this section existed (this
+section is also referenced, not duplicated, by that report).
+
+**Testing:** once implemented, the tester can check that `parse_args`
+rejects a `--step` value outside the fixed set, that each `ensure_*`
+helper is a no-op (does not recompute) when its `PipelineContext` fields
+are already set, that `run_selected_step(context, "all")` populates every
+`PipelineContext` field exactly once even though multiple `run_stepN_*`
+functions depend on the same prerequisite, and that `main([])` (no
+arguments) runs the full pipeline, matching today's documented
+`python -m src.main` behavior.
