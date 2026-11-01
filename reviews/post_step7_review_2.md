@@ -18,7 +18,7 @@ One row per comment above, with the same number. Decision is Accepted or Rejecte
 
 | # | Decision | Reason | Fixed in commit |
 | --- | --- | --- | --- |
-| 1 | Accepted | This error should be caught | Commit |
-| 2 | Accepted | Consistency standard | Commit |
-| 3 | Accepted | Should at least note rationale | Commit |
-| 4 | Accepted | Should validate | Commit |
+| 1 | Accepted | This error should be caught | ec97403 |
+| 2 | Accepted | Consistency standard | ec97403 |
+| 3 | Accepted | Should at least note rationale | fa9e78f |
+| 4 | Accepted | Should validate | ec97403 |
