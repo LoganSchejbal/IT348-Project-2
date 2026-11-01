@@ -2,11 +2,16 @@
 
 Written by the builder agent.
 
-- Builder transcript: transcripts/36_2026-11-01_builder_step7.md
+- Builder transcripts: transcripts/36_2026-11-01_builder_step7.md (planning
+  session), transcripts/39_2026-11-01_builder_step7.md (implementation
+  session, this update)
 - What this covers: a planning-only addition to `PLAN.md` (section "Post
   Step 7: Project adjustments") for a console driver that exposes all of
-  Steps 1-7. No code was written in this session; this report records what
-  was planned and why, for the builder session that implements it next.
+  Steps 1-7, plus the implementation of that plan (`src/cli.py`,
+  `src/main.py`) and its results on the real dataset. The "Decisions and
+  reasoning" and initial "What was changed"/"Verification" sections below
+  are from the planning session; "Implementation (this session)" and
+  "Results" below are from the implementation session.
 
 ## Why this was needed
 
@@ -66,11 +71,113 @@ Comments #3 and #4 were rejected by the student as out of scope for this
 task (they concern `src/sustainable.py`, not the Post Step 7 plan), so no
 change was made for them here.
 
+## Implementation (this session)
+
+This session implemented the driver planned above, exactly as specified
+in PLAN.md's "Post Step 7: Project adjustments" section (including the
+comment #1/#2 fixes already folded into that section):
+
+- `src/cli.py` (commit `0d3b367`): `build_arg_parser`/`parse_args` and the
+  `--data-dir`/`--step` options, with `STEP_CHOICES` restricted to
+  `{"all", "load", "drift", "preprocess", "train", "evaluate",
+  "evaluate-by-year", "sustainable"}`. Imports nothing from `pandas`,
+  `scikit-learn`, or any other `src/` module.
+- `src/main.py`:
+  - `PipelineContext` and `ensure_data_loaded`/`ensure_preprocessed`/
+    `ensure_trained` (commit `809f99b`). `ensure_data_loaded` raises
+    `FileNotFoundError` naming `--data-dir` when the directory is missing
+    or has no `sampled_*_api.csv` files, per the comment #2 fix.
+  - `summarize_loaded_years`/`summarize_preprocessing`/
+    `summarize_classifiers` (commit `bbe8123`), per the comment #1 fix, so
+    `run_step1_load`, `run_step3_preprocess`, and `run_step4_train` each
+    return a single `pd.DataFrame`.
+  - `run_step1_load` through `run_step7_sustainable`,
+    `format_dataframe_for_console`, `run_selected_step`, and `main`
+    (commit `04b94a7`).
+
+No function signature or behavior differs from the plan; nothing in
+`PLAN.md` needed further revision during implementation.
+
+## Results (real run, `input_data/`)
+
+Run with `python -m src.main` (no arguments, i.e. `--step all`) against
+the full 2014-2021 dataset. All numbers below are from that run, not
+estimated.
+
+**`--step load`** — `summarize_loaded_years`, one row per discovered year:
+
+| year | rows | n_features | n_malware | n_benign |
+| --- | --- | --- | --- | --- |
+| 2014 | 3000 | 1848 | 1500 | 1500 |
+| 2015 | 3000 | 1848 | 1500 | 1500 |
+| 2016 | 3000 | 1848 | 1500 | 1500 |
+| 2017 | 3000 | 1848 | 1500 | 1500 |
+| 2018 | 3000 | 1848 | 1500 | 1500 |
+| 2019 | 3000 | 1848 | 1500 | 1500 |
+| 2020 | 3000 | 1848 | 1500 | 1500 |
+| 2021 | 3000 | 1848 | 1500 | 1500 |
+
+**`--step preprocess`** — `summarize_preprocessing`:
+
+| split | years | shape |
+| --- | --- | --- |
+| train | 2014, 2015, 2016, 2017 | (12000, 1848) |
+| test | 2018, 2019, 2020, 2021 | (12000, 1848) |
+
+**`--step train`** — `summarize_classifiers` confirms both classifiers
+from Step 4 (`logistic_regression`, `random_forest`) are built with
+`random_state=42`, read directly from each fitted estimator's own
+`get_params()`.
+
+**`--step evaluate`** — pooled test set (2018-2021):
+
+| classifier | accuracy | precision | recall | f1 |
+| --- | --- | --- | --- | --- |
+| logistic_regression | 0.6166 | 0.5762 | 0.8812 | 0.6968 |
+| random_forest | 0.6602 | 0.5971 | 0.9857 | 0.7437 |
+
+**`--step evaluate-by-year`** — matches the Step 6 trajectory already
+reported in `docs/step6_test_results.md`:
+
+| year | classifier | accuracy | precision | recall | f1 |
+| --- | --- | --- | --- | --- | --- |
+| 2018 | logistic_regression | 0.9547 | 0.9355 | 0.9767 | 0.9556 |
+| 2018 | random_forest | 0.9567 | 0.9408 | 0.9747 | 0.9574 |
+| 2019 | logistic_regression | 0.5730 | 0.5398 | 0.9900 | 0.6987 |
+| 2019 | random_forest | 0.5807 | 0.5442 | 0.9927 | 0.7030 |
+| 2020 | logistic_regression | 0.5477 | 0.5261 | 0.9613 | 0.6800 |
+| 2020 | random_forest | 0.5540 | 0.5286 | 0.9973 | 0.6910 |
+| 2021 | logistic_regression | 0.3910 | 0.4228 | 0.5967 | 0.4949 |
+| 2021 | random_forest | 0.5497 | 0.5268 | 0.9780 | 0.6847 |
+
+**`--step sustainable`** — matches the Step 7 trajectory already reported
+in `docs/step7_sustainable_approach.md` (static vs. periodic retraining,
+both classifiers):
+
+| year | classifier | accuracy_static | f1_static | accuracy_retrained | f1_retrained |
+| --- | --- | --- | --- | --- | --- |
+| 2018 | logistic_regression | 0.9547 | 0.9556 | 0.9547 | 0.9556 |
+| 2019 | logistic_regression | 0.5730 | 0.6987 | 0.5743 | 0.6999 |
+| 2020 | logistic_regression | 0.5477 | 0.6800 | 0.9120 | 0.9123 |
+| 2021 | logistic_regression | 0.3910 | 0.4949 | 0.9067 | 0.9062 |
+| 2018 | random_forest | 0.9567 | 0.9574 | 0.9567 | 0.9574 |
+| 2019 | random_forest | 0.5807 | 0.7030 | 0.5747 | 0.6988 |
+| 2020 | random_forest | 0.5540 | 0.6910 | 0.9413 | 0.9399 |
+| 2021 | random_forest | 0.5497 | 0.6847 | 0.9443 | 0.9415 |
+
+Full output (including `--step drift`'s top-20 drifting features, which
+is wide and omitted here) is reproducible with `python -m src.main`.
+
+`python -m src.main --data-dir does_not_exist` was also run to confirm
+`ensure_data_loaded` raises
+`FileNotFoundError: No 'sampled_*_api.csv' files found in does_not_exist; check --data-dir`
+and never reaches `load_all_years`, matching the comment #2 fix.
+
 ## Left unfinished
 
-- `src/cli.py` and `src/main.py` are planned but not implemented.
-- This section's tests (listed under "Testing" in `PLAN.md`) have not been
-  written; that is the tester's task once the driver exists.
+- This section's tests (listed under "Testing" in `PLAN.md`) have not
+  been written; that is the tester's task now that the driver exists and
+  has been run successfully against `input_data/`.
 - Comments #3 and #4 in `reviews/post_step7_review_1.md` remain open
   against `src/sustainable.py`; they were rejected by the student, not
   addressed by this session.
