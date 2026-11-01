@@ -34,6 +34,7 @@ One row per failing test. Decision is "Accepted" (the test is right; the builder
 
 | Test | Cause | Decision | Fixed in commit |
 | --- | --- | --- | --- |
+| 1 | Error in test | Rejected | Commit |
 
 ## Runs (added by `python harness.py test N`; do not edit)
 
