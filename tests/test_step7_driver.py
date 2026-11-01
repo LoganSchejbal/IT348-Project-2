@@ -52,6 +52,7 @@ def _make_dataset_dir(tmp_path, years=_YEARS):
     Returns:
         The `tmp_path` the files were written into.
     """
+    tmp_path.mkdir(parents=True, exist_ok=True)
     for year in years:
         for class_name, label in (("benign", 0), ("malware", 1)):
             rows = []
