@@ -168,10 +168,39 @@ both classifiers):
 Full output (including `--step drift`'s top-20 drifting features, which
 is wide and omitted here) is reproducible with `python -m src.main`.
 
+**Note on `--step drift`'s scope:** `run_step2_drift` only prints
+`top_drifting_features` (per-feature drift). It does not also print
+`most_different_year_pairs` (which year pairs differ most), even though
+PLAN.md's Step 2 "Approach" treats both as core deliverables. This is an
+intentional simplification for the console driver, not an omission: the
+single shared `format_dataframe_for_console` helper (see comment #1 fix
+above) prints one `pd.DataFrame` per step, and `--step drift` was scoped
+to the per-feature view. The full picture, including which year pairs
+differ most, remains available in `docs/step2_drift_analysis.md`.
+
 `python -m src.main --data-dir does_not_exist` was also run to confirm
 `ensure_data_loaded` raises
 `FileNotFoundError: No 'sampled_*_api.csv' files found in does_not_exist; check --data-dir`
 and never reaches `load_all_years`, matching the comment #2 fix.
+
+## Fix-mode update (reviews/post_step7_review_2.md)
+
+A second reviewer session reviewed the implemented `src/cli.py` and
+`src/main.py` (`reviews/post_step7_review_2.md`). The student accepted
+all four comments. Fixed in commit `ec97403` (comments #1, #2, #4) and
+this report update (comment #3):
+
+| # | Comment | Fix |
+| --- | --- | --- |
+| 1 | `main()` had no exception handling, so `ensure_data_loaded`'s `FileNotFoundError` (or a `ValueError` from `evaluate_by_year`/`retraining_trajectory`/`run_sustainability_comparison`) would propagate as a raw traceback instead of the clean, actionable message PLAN.md intended. | `main()` now catches `FileNotFoundError` and `ValueError` around `run_selected_step`, prints `f"Error: {error}"` to stderr, and exits with status 1 (`SystemExit(1)`). |
+| 2 | `classifier_factories` used `field(default=None)` while every other optional `PipelineContext` field used a plain `= None`, a purely stylistic inconsistency. | Changed to `classifier_factories: dict[str, Callable[[], object]] \| None = None`; dropped the now-unused `dataclasses.field` import. |
+| 3 | `run_step2_drift` only prints `top_drifting_features`, never `most_different_year_pairs`, even though PLAN.md's Step 2 "Approach" treats both as core deliverables. | Documented as an intentional console-driver scoping choice in the "Results" section above, rather than changing the driver's single-dataframe-per-step design; `docs/step2_drift_analysis.md` still covers the year-pair view. |
+| 4 | `ensure_data_loaded` derived `feature_cols` from an arbitrary year (`next(iter(...))`), with no check that every year's columns actually match. | `ensure_data_loaded` now builds each year's feature columns, compares every year against the first, and raises `ValueError` naming any mismatched years instead of silently using one year's columns. |
+
+Verified by rerunning `python -m src.main` (all seven steps) and the full
+`tests/test_step7_driver.py`/`tests/test_step7_sustainable.py` suite
+(32 passed) after the fix; see "Results" above for the unchanged real-data
+numbers, confirming the fixes did not alter any computed metric.
 
 ## Left unfinished
 
