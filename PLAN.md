@@ -170,29 +170,71 @@ concern layout of `src/`:
     Fields start unset (`None`) and are filled in by the step-runner
     functions below, so each runner can check "has this already been
     computed by an earlier call?" instead of recomputing it.
-  - `ensure_data_loaded(context: PipelineContext) -> None`,
-    `ensure_preprocessed(context: PipelineContext) -> None`,
-    `ensure_trained(context: PipelineContext) -> None` — each calls the
-    relevant Step 1/3/4 functions (`load_all_years` + `get_feature_columns`
-    + `split_years_in_half`; `prepare_train_test`; `get_classifiers` +
-    `get_classifier_factories` + `train_classifiers`) only if the
-    corresponding `PipelineContext` fields are still unset. This is what
-    lets a console user request a single step (e.g. `--step sustainable`)
-    and still get correct results, because the prerequisite steps it
-    depends on run automatically and only once.
-  - `run_step1_load(context) -> dict[int, pd.DataFrame]`,
+  - `ensure_data_loaded(context: PipelineContext) -> None` — before calling
+    `load_all_years`, checks `Path(context.data_dir).is_dir()` and that
+    `discover_dataset_files(context.data_dir)` returns at least one file;
+    this check is needed here (not left to `data_loader.py`) because
+    neither `discover_dataset_files` (a `glob`, which simply returns an
+    empty list for a missing or empty directory) nor `load_all_years`
+    raises on a missing/empty `data_dir` today — an empty `year_data` dict
+    would otherwise flow silently into every later step and fail far from
+    the real cause. If the check fails, raises
+    `FileNotFoundError(f"No 'sampled_*_api.csv' files found in {data_dir}; "
+    f"check --data-dir")` so the console user sees one actionable message
+    pointing at the flag that controls it, instead of a stack trace from
+    deep inside drift analysis or preprocessing. Only then does it call
+    `load_all_years` + `get_feature_columns` + `split_years_in_half`, if
+    `context.year_data` is still unset.
+  - `ensure_preprocessed(context: PipelineContext) -> None`,
+    `ensure_trained(context: PipelineContext) -> None` — same
+    already-set/no-op pattern as `ensure_data_loaded`, calling
+    `prepare_train_test`, and `get_classifiers` + `get_classifier_factories`
+    + `train_classifiers` respectively, only if the corresponding
+    `PipelineContext` fields are still unset. This is what lets a console
+    user request a single step (e.g. `--step sustainable`) and still get
+    correct results, because the prerequisite steps it depends on
+    (including the `ensure_data_loaded` validation above) run
+    automatically and only once.
+  - `summarize_loaded_years(year_data: dict[int, pd.DataFrame], feature_cols: list[str]) -> pd.DataFrame`,
+    `summarize_preprocessing(train_years: list[int], test_years: list[int], X_train: np.ndarray, X_test: np.ndarray) -> pd.DataFrame`,
+    `summarize_classifiers(classifiers: dict[str, object]) -> pd.DataFrame` —
+    three small, display-only helpers added so that every `run_stepN_*`
+    function below can return a single `pd.DataFrame`, resolving the
+    mismatch between `format_dataframe_for_console`'s single-dataframe
+    signature and steps whose underlying Step 1/3/4 functions don't
+    themselves return one printable frame:
+    - `summarize_loaded_years` returns one row per year already present in
+      `year_data` with `year`, `rows`, `n_features` (`len(feature_cols)`),
+      `n_malware`, `n_benign` (the last two from `(df["label"] == 1/0).sum()`).
+    - `summarize_preprocessing` returns one row for `"train"` and one for
+      `"test"`, each with its years (joined as a string) and its array's
+      shape (`X_train.shape`/`X_test.shape`).
+    - `summarize_classifiers` returns one row per classifier with its name
+      and `model.get_params()` (every scikit-learn estimator already
+      exposes this), so hyperparameters are read from the fitted objects
+      rather than duplicated from `models.py`.
+    None of these inspect anything beyond objects the Step 1/3/4 functions
+    already produced, so this stays a console-formatting concern, not new
+    modeling or data logic.
+  - `run_step1_load(context) -> pd.DataFrame`,
     `run_step2_drift(context) -> pd.DataFrame`,
-    `run_step3_preprocess(context) -> None`,
-    `run_step4_train(context) -> dict[str, object]`,
+    `run_step3_preprocess(context) -> pd.DataFrame`,
+    `run_step4_train(context) -> pd.DataFrame`,
     `run_step5_evaluate(context) -> pd.DataFrame`,
     `run_step6_evaluate_by_year(context) -> pd.DataFrame`,
     `run_step7_sustainable(context) -> pd.DataFrame` — one function per
     step, each calling `ensure_*` for whatever it needs first, then
     calling only the already-planned Step 1-7 functions (no new modeling
-    or data logic lives here), and returning the dataframe/dict that step
-    produces so it can be printed.
+    or data logic lives here). `run_step1_load`, `run_step3_preprocess`,
+    and `run_step4_train` call the matching `summarize_*` helper above on
+    their way out so every one of the seven functions returns a single
+    `pd.DataFrame`; the other four already produce one directly from their
+    underlying Step 2/5/6/7 functions. `PipelineContext` still holds the
+    full, unsummarized `year_data`/`classifiers`/etc. for later steps to
+    consume — only the console-facing return value is a summary.
   - `format_dataframe_for_console(df: pd.DataFrame) -> str` — a single
-    shared helper (so every step prints tables the same way) that calls
+    shared helper (so every step prints tables the same way, now that
+    every `run_stepN_*` function returns one `pd.DataFrame`) that calls
     `pandas.DataFrame.to_string(index=False)` and rounds floats for
     readability.
   - `run_selected_step(context, step: str) -> None` — maps the `--step`
@@ -218,8 +260,14 @@ section is also referenced, not duplicated, by that report).
 **Testing:** once implemented, the tester can check that `parse_args`
 rejects a `--step` value outside the fixed set, that each `ensure_*`
 helper is a no-op (does not recompute) when its `PipelineContext` fields
-are already set, that `run_selected_step(context, "all")` populates every
-`PipelineContext` field exactly once even though multiple `run_stepN_*`
-functions depend on the same prerequisite, and that `main([])` (no
-arguments) runs the full pipeline, matching today's documented
-`python -m src.main` behavior.
+are already set, that `ensure_data_loaded` raises `FileNotFoundError`
+(and never calls `load_all_years`) for a `data_dir` that does not exist
+or contains no `sampled_*_api.csv` files, that `run_step1_load`,
+`run_step3_preprocess`, and `run_step4_train` each return a single
+`pd.DataFrame` (via `summarize_loaded_years`/`summarize_preprocessing`/
+`summarize_classifiers`) so `format_dataframe_for_console` can render
+every step's output the same way, that `run_selected_step(context, "all")`
+populates every `PipelineContext` field exactly once even though multiple
+`run_stepN_*` functions depend on the same prerequisite, and that
+`main([])` (no arguments) runs the full pipeline, matching today's
+documented `python -m src.main` behavior.
