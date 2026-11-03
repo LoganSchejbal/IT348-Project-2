@@ -1,6 +1,6 @@
 # AGENTS.md: Project 2 context for all agents
 
-Every agent (builder, reviewer, tester) reads this file first. Fill in the [TODO] parts before Step 0. Keep it short and specific.
+Every agent (builder, reviewer, tester) reads this file first. Fill in the TODO parts before Step 0. Keep it short and specific.
 
 ## Project goal
 
